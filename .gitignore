@@ -1,0 +1,9 @@
+resources
+node_modules
+output
+npm-debug.log
+.turbo
+build
+tsconfig.tsbuildinfo
+
+input.txt
