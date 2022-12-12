@@ -19,7 +19,7 @@ func main() {
   grid := constructInitialGrid(allLines)
   allMoves := getMoves(allLines)
   for _, move := range allMoves {
-    grid = applyMove(grid, move)
+    grid = applyMoveUpdated(grid, move)
   }
 
   lastCrates := make([]byte, len(grid))

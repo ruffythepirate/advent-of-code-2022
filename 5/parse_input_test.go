@@ -1,4 +1,4 @@
-package parse_input
+package main
 
 import "testing"
 
@@ -84,5 +84,81 @@ func Test_parseMove(t *testing.T) {
     assert.Equal(t, &Move{2, 3, 1}, move)
 }
 
+func Test_applyMove(t *testing.T) {
+    // given
+    grid := [][]byte{
+        {'A', 'B', 'C'},
+        {'D', 'E', 'F', 'G', 'H'},
+        {'C', 'C', 'C', 'C', 'C'},
+    }
+    move := &Move{2, 3, 1}
+    // when
+    newGrid := applyMove(grid, move)
+    // then
+    assert.Equal(t, [][]byte{
+        {'A', 'B', 'C'},
+        {'D', 'E', 'F', 'G'},
+        {'C', 'C', 'C', 'C', 'C', 'H'},
+    }, newGrid)
+}
 
+func Test_applyMove_multiSteps(t *testing.T) {
+    // given
+    grid := [][]byte{
+        {'A', 'B', 'C'},
+        {'D', 'E', 'F', 'G', 'H'},
+        {'C', 'C', 'C', 'C', 'C'},
+    }
+    move := &Move{2, 3, 4}
+    // when
+    newGrid := applyMove(grid, move)
+    // then
+    assert.Equal(t, [][]byte{
+        {'A', 'B', 'C'},
+        {'D'},
+        {'C', 'C', 'C', 'C', 'C', 'H', 'G', 'F', 'E'},
+    }, newGrid)
+}
+
+func Test_applyMoveUpdated(t *testing.T) {
+    // given
+    grid := [][]byte{
+        {'A', 'B', 'C'},
+        {'D', 'E', 'F', 'G', 'H'},
+        {'C', 'C', 'C', 'C', 'C'},
+    }
+    move := &Move{2, 3, 3}
+    // when
+    newGrid := applyMoveUpdated(grid, move)
+    // then
+    assert.Equal(t, [][]byte{
+        {'A', 'B', 'C'},
+        {'D', 'E'},
+        {'C', 'C', 'C', 'C', 'C', 'F', 'G', 'H'},
+    }, newGrid)
+}
+
+func Test_getMoves(t *testing.T) {
+    // given
+    lines := []string{
+        "    [H][C]",
+        "    [G][C]",
+        " [C][F][C]",
+        " [B][E][C]",
+        " [A][D][C]",
+        "  1  2  3 ",
+        "",
+        "move 1 from 2 to 3",
+        "move 2 from 3 to 1",
+        "move 3 from 1 to 2",
+    }
+    // when
+    moves := getMoves(lines)
+    // then
+    assert.Equal(t, []*Move{
+        {2, 3, 1},
+        {3, 1, 2},
+        {1, 2, 3},
+    }, moves)
+}
 

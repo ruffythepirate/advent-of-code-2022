@@ -1,7 +1,5 @@
-package parse_input
+package main
 
-import "os"
-import "bufio"
 import "regexp"
 import "strconv"
 
@@ -11,15 +9,15 @@ type Move struct {
   num int
 }
 
-func readLines() []string {
-  scanner := bufio.NewScanner(os.Stdin)
-  var lines []string
-  for scanner.Scan() {
-    lines = append(lines, scanner.Text())
+func getMoves(lines []string) []*Move {
+  moveStartIndex := findNumberLineIndex(lines) + 2
+  var moves []*Move
+  for i := moveStartIndex; i < len(lines); i++ {
+    move := parseMove(lines[i])
+    moves = append(moves, move)
   }
-  return lines
+  return moves
 }
-
 
 func identifyIndexesOfColumns(numberLine string) []int {
   var indexes []int
@@ -62,7 +60,6 @@ func constructInitialGrid(lines []string) [][]byte {
 }
 
 func parseMove(asString string) *Move {
-  // TODO
   reg := regexp.MustCompile(`^move ([0-9]+) from ([0-9]+) to ([0-9]+)$`)
   matches := reg.FindStringSubmatch(asString)
   from, _ := strconv.Atoi(matches[2])
@@ -71,3 +68,25 @@ func parseMove(asString string) *Move {
   return &Move{from, to, num}
 }
 
+func applyMove(grid [][]byte, move *Move) [][]byte {
+  toIndex := move.to - 1
+  fromIndex := move.from - 1
+  moveItems := grid[fromIndex][len(grid[fromIndex])-move.num:]
+  grid[fromIndex] = grid[fromIndex][:len(grid[fromIndex])-move.num]
+  arrayLen := len(moveItems)
+  for i := 0; i < arrayLen; i++ {
+    grid[toIndex] = append(grid[toIndex], moveItems[arrayLen - i - 1])
+  }
+  return grid
+}
+
+func applyMoveUpdated(grid [][]byte, move *Move) [][]byte {
+  toIndex := move.to - 1
+  fromIndex := move.from - 1
+  moveItems := grid[fromIndex][len(grid[fromIndex])-move.num:]
+  grid[fromIndex] = grid[fromIndex][:len(grid[fromIndex])-move.num]
+  for i := 0; i < len(moveItems); i++ {
+    grid[toIndex] = append(grid[toIndex], moveItems[i])
+  }
+  return grid
+}

@@ -1,4 +1,4 @@
-module io.ruffy/parse_input
+module io.ruffy/main
 
 go 1.13
 
