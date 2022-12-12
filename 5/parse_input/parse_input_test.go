@@ -75,5 +75,14 @@ func Test_constructInitialGrid(t *testing.T) {
     }, grid)
 }
 
+func Test_parseMove(t *testing.T) {
+    // given
+    moveAsString := "move 1 from 2 to 3"
+    // when
+    move := parseMove(moveAsString)
+    // then
+    assert.Equal(t, &Move{2, 3, 1}, move)
+}
+
 
 

@@ -2,6 +2,14 @@ package parse_input
 
 import "os"
 import "bufio"
+import "regexp"
+import "strconv"
+
+type Move struct {
+  from int
+  to int
+  num int
+}
 
 func readLines() []string {
   scanner := bufio.NewScanner(os.Stdin)
@@ -52,3 +60,14 @@ func constructInitialGrid(lines []string) [][]byte {
   }
   return grid
 }
+
+func parseMove(asString string) *Move {
+  // TODO
+  reg := regexp.MustCompile(`^move ([0-9]+) from ([0-9]+) to ([0-9]+)$`)
+  matches := reg.FindStringSubmatch(asString)
+  from, _ := strconv.Atoi(matches[2])
+  to, _ := strconv.Atoi(matches[3])
+  num, _ := strconv.Atoi(matches[1])
+  return &Move{from, to, num}
+}
+
