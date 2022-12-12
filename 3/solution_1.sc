@@ -1,5 +1,4 @@
 import scala.io.StdIn
-import java.util.ArrayList
 
 var nextLine = StdIn.readLine()
 
