@@ -47,7 +47,7 @@ func constructInitialGrid(lines []string) [][]byte {
   columnIndexes := identifyIndexesOfColumns(lines[numberLineIndex])
   var grid [][]byte
   for i := 0; i < len(columnIndexes); i++ {
-    crates := readCrates(lines, columnIndexes[i])
+    crates := readCrates(lines[:numberLineIndex], columnIndexes[i])
     grid = append(grid, crates)
   }
   return grid
