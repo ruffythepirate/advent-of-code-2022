@@ -7,3 +7,5 @@ build
 tsconfig.tsbuildinfo
 
 input.txt
+.metals
+target
