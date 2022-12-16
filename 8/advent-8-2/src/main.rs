@@ -13,7 +13,15 @@ fn main() {
     }
     let grid = parse_grid(&lines.iter().map(|l| &**l).collect());
 
-    println!("To be done");
+    let mut max_score = -1;
+    for y in 0..grid.len() - 1 {
+        for x in 0..grid[y].len() - 1 {
+            let score = get_score(&grid, (x, y));
+            max_score = cmp::max(max_score, score);
+        }
+    }
+
+    println!("{}", max_score);
 }
 
 pub fn parse_grid(input: &Vec<&str>) -> Vec<Vec<i8>> {
@@ -42,17 +50,59 @@ pub fn build_empty_map(grid: &Vec<Vec<i8>>) -> Vec<Vec<i8>> {
     map
 }
 
-pub fn build_visible_trees_map(grid: &Vec<Vec<i8>>, current_map: &mut Vec<Vec<i8>>, pos: (usize, usize), mutate_pos: fn(usize, usize) -> (usize, usize), can_mutate: impl Fn(usize, usize) -> bool) {
-    panic!("To be done");
+pub fn count_trees(grid: &Vec<Vec<i8>>, start_value: i8, current_count: i32, current_pos: (usize, usize), mutate_pos: fn(usize, usize) -> (usize, usize), can_mutate: impl Fn(usize, usize) -> bool) -> i32 {
+    if !can_mutate(current_pos.0, current_pos.1) {
+        return current_count;
+    } else if current_count > 0 && grid[current_pos.1][current_pos.0] >= start_value {
+        return current_count;
+    } else {
+        let new_pos = mutate_pos(current_pos.0, current_pos.1);
+        return count_trees(grid, start_value, current_count + 1, new_pos, mutate_pos, can_mutate);
+    }
 }
 
-pub fn build_best_height_map(grid: &Vec<Vec<i8>>) -> Vec<Vec<i8>> {
-    panic!("To be done");
+pub fn get_score(grid: &Vec<Vec<i8>>, pos: (usize, usize)) -> i32 {
+    let mut scores: [i32; 4] = [0, 0, 0, 0];
+    scores[0] = count_trees(grid, grid[pos.1][pos.0], 0, pos, |x, y| (x + 1, y), |x, _| x < grid[0].len() - 1);
+    scores[1] = count_trees(grid, grid[pos.1][pos.0], 0, pos, |x, y| (x - 1, y), |x, _| x > 0);
+    scores[2] = count_trees(grid, grid[pos.1][pos.0], 0, pos, |x, y| (x, y + 1), |_, y| y < grid.len() - 1);
+    scores[3] = count_trees(grid, grid[pos.1][pos.0], 0, pos, |x, y| (x, y - 1), |_, y| y > 0);
+    scores.iter().product::<i32>()
+    
 }
+
+
+
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_get_score() {
+        let grid = parse_grid(&vec![
+            "7432",
+            "7899",
+            "7722",
+            "7722",
+        ]);
+
+        assert_eq!(get_score(&grid, (1, 1)), 2);
+        assert_eq!(get_score(&grid, (2, 1)), 4);
+    }
+
+    #[test]
+    fn test_count_trees() {
+        let grid = parse_grid(&vec![
+            "74252223471",
+        ]);
+        let max = grid[0].len();
+        let result = count_trees(&grid, grid[0][0], 0, (0, 0), |x, y| (x+1, y), |x, _| x < max - 1);
+        assert_eq!(result, 9);
+
+        let result = count_trees(&grid, grid[0][1], 0, (1, 0), |x, y| (x+1, y), |x, _| x < max - 1);
+        assert_eq!(result, 2);
+    }
 
     #[test]
     fn test_parse_row() {
