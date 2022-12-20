@@ -9,3 +9,43 @@ tsconfig.tsbuildinfo
 input.txt
 .metals
 target
+
+# Build output
+bin/
+obj/
+
+# NuGet Packages
+*.nupkg
+
+# Visual Studio
+*.suo
+*.user
+*.sln.docstates
+
+# Visual Studio (Mac)
+*.userprefs
+
+# Visual Studio Code
+.vscode/
+
+# Visual Studio Cache Files
+*.vcxproj.filters
+*.vcxproj.user
+
+# Visual Studio Local History
+*.orig
+
+# ReSharper is a .NET coding add-in
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# DotCover is a code coverage tool
+*.dotCover
+
+# NCrunch
+*.ncrunch*
+.builds
+
+# Git
+.git/
+*.gitignore
