@@ -7,12 +7,14 @@ class Program
     static void Main(string[] args)
     {
         var monkeys = ReadAllMonkeys();
-        for(int i = 0; i < 20; i++) {
-            RoundLogic.PerformRound(monkeys);
+        var highestCommonDivisor = monkeys.Select(m => m.TestDivisor).Aggregate((a, b) => a * b);
+        for(int i = 0; i < 10000; i++) {
+            RoundLogic.PerformRound(monkeys, highestCommonDivisor);
         }
 
         var worstMonkeys = monkeys.OrderByDescending(m => m.InspectScore).Take(2).ToList();
-        var monkeyBusniness = worstMonkeys[0].InspectScore * worstMonkeys[1].InspectScore;
+        Console.WriteLine($"{worstMonkeys[0].InspectScore} {worstMonkeys[1].InspectScore}");
+        var monkeyBusniness = new Decimal(worstMonkeys[0].InspectScore) * new Decimal(worstMonkeys[1].InspectScore);
         Console.WriteLine($"{monkeyBusniness}");
     }
 
