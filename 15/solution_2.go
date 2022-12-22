@@ -35,14 +35,16 @@ func main() {
       is_in_range := false
       for j := 0; j < len(sensors); j++ {
         if is_within_range(sensors[j], x, y) {
-          diff_in_y := sensors[j].beacon_dist - abs(y - sensors[j].y)
-          x += 2*diff_in_y 
+          x = sensors[j].x + sensors[j].beacon_dist - abs(y - sensors[j].y)
           is_in_range = true
           break;
         }
       }
       if !is_in_range {
         fmt.Println("x", x, "y", y, "is not in range")
+        signal_value := x * 4000000 + y
+        fmt.Println("signal value", signal_value)
+
       }
     }
   }
