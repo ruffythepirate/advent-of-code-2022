@@ -10,6 +10,9 @@ fn main() {
     // Read from stdin and parse each line as a vertex.
     let mut vertices = read_input();
 
+    let available_valves = vertices.values().filter(|v| v.valve_value > 0).count();
+    println!("Available valves: {}", available_valves);
+
     let mut journeys = Vec::new();
     let first_journey = Journey {
             current_vertex_id: "AA".to_string(),
@@ -17,9 +20,26 @@ fn main() {
             score: 0,
             time_used: 0
         };
-    let mut current_journey = first_journey;
+    journeys.push(first_journey);
+    let mut current_journey: Journey;
     let mut best_score = 0;
-    while current_journey.time_used < time_used_limit {
+    let mut max_time_used = 0;
+    while journeys.len() > 0 {
+        current_journey = journeys.remove(0);
+        let all_valves_released = current_journey.released_valves.len() >= available_valves;
+        if current_journey.time_used >= time_used_limit {
+            break;
+        }
+        if all_valves_released {
+            continue;
+        }
+
+        if current_journey.time_used > max_time_used {
+            max_time_used = current_journey.time_used;
+            println!("Max time used: {}", max_time_used);
+            println!("Journeys left: {}", journeys.len());
+        }
+
         let next_journeys = evaluate_journey(&current_journey, &mut vertices);
         for next_journey in next_journeys {
             if next_journey.score > best_score {
@@ -27,7 +47,6 @@ fn main() {
             }
             journeys.push(next_journey);
         }
-        current_journey = journeys.remove(0);
     }
     // Loop until time_used_limit is reached.
     println!("{}", best_score);
@@ -97,6 +116,10 @@ fn get_possible_journeys(journey: &Journey, vertices: &HashMap<String, Vertex>) 
         possible_journeys.push(new_journey);
     }
     for connected_vertex_id in &current_vertex.connected_to {
+        let connected_vertex = vertices.get(connected_vertex_id).unwrap();
+        if connected_vertex.best_score > journey.score {
+            continue;
+        }
         let new_journey = Journey {
             current_vertex_id: connected_vertex_id.to_string(),
             released_valves: journey.released_valves.clone(),
