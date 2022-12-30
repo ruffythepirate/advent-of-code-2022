@@ -13,22 +13,20 @@ function main(lines: string[]): void {
   for (let i = 0; i < maxRocks; i++) {
     const shape = getShape(i, playfield.getTowerHeight());
 
+    if(i % 1000 === 0) {
+      playfield.cleanupHiddenRows();
+    }
 
-    let windDirection = line[charIndex % line.length] === '<' ? -1 : 1;
+
+    let windDirection = getWindDirection(line, charIndex);
     let solidifiedPosition = moveShape(shape, playfield, windDirection);
     while (solidifiedPosition === undefined) {
       if(charIndex % line.length === 0) {
         //console.log('char index reset, shape index = ', i % 5, 'first rocks: ', firstRocks);
       }
       charIndex = (charIndex + 1);
-      windDirection = line[charIndex] === '<' ? -1 : 1;
+      windDirection = getWindDirection(line, charIndex);
       solidifiedPosition = moveShape(shape, playfield, windDirection);
-    }
-    if (firstRocks.length < 10) {
-      firstRocks.push(solidifiedPosition);
-    }
-    if(charIndex % line.length === 0) {
-      console.log('char index reset after solid, shape index = ', i % 5);//, 'first rocks: ', firstRocks);
     }
     charIndex = (charIndex + 1);
   }
@@ -37,6 +35,10 @@ function main(lines: string[]): void {
   console.log(playfield.minY, playfield.getTowerHeight());
 
   console.log(playfield.getTowerHeight());
+}
+
+function getWindDirection(line: string, charIndex: number): number {
+  return line[charIndex % line.length] === '<' ? -1 : 1;
 }
 
 /**

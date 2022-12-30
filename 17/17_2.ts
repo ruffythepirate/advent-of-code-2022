@@ -166,18 +166,19 @@ export class Playfield {
     }
     let bestMinY = this.recursiveMinY(adjustedY, x + 1, newMinY, 0);
     if(prevDiffY !== -1) {
+
+      let minYAfterYPlus1 = this.recursiveMinY(adjustedY - 1, x, newMinY, 1);
       bestMinY = Math.max(handleNullable(bestMinY, -1), 
-                         handleNullable(this.recursiveMinY(adjustedY+1, x, newMinY, 1), -1));
+                         handleNullable(minYAfterYPlus1, -1));
     }
     if(prevDiffY !== 1) {
       bestMinY = Math.max(handleNullable(bestMinY, -1), 
                           handleNullable(this.recursiveMinY(adjustedY-1, x, newMinY, -1), -1));
     }
 
-    if (bestMinY === null) {
+    if (bestMinY === null || bestMinY === -1) {
       return null;
     }
-
     return Math.min(bestMinY ? bestMinY : Infinity, newMinY);
   }
 
@@ -189,7 +190,16 @@ export class Playfield {
     }
   }
 
-
+  printRows(minY: number, maxY: number, markedRow?: number) {
+    for (let y = maxY - this.minY; y >= minY - this.minY; y--) {
+      const rowString = this.groundShape[y].map(b => b ? '#' : '.').join('');
+      if(y === markedRow) {
+        console.log(rowString + ' <-');
+      } else {
+        console.log(rowString);
+      }
+    }
+  }
 
   canMoveLeft(shape: Shape) {
     if (shape.bottomLeft.x === 0) {
@@ -230,7 +240,7 @@ export class Playfield {
 }
 
 function handleNullable(value: number | null, defaultValue: number): number {
-  if (value === undefined) {
+  if (value === null) {
     return defaultValue;
   }
   return value as number;

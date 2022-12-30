@@ -74,6 +74,18 @@ describe('Playfield', () => {
     expect(playfield.findMinY()).toBe(2);
   });
 
+  it('should have minY undefined when not found', () => {
+    const playfield = new Playfield(4);
+    expect(playfield.findMinY()).toBeUndefined();
+  });
+
+  it('should have minY undefined when no shape', () => {
+    const playfield = new Playfield(4);
+    playfield.solidify(new Shape(new Point(0, 2), [new Point(0, 0), new Point(1, 0), new Point(2, 0), new Point(3, 1)]));
+    let minY = playfield.findMinY();
+    expect(minY).toBeUndefined();
+  });
+
   it('should find first column maxY', () => {
     const playfield = new Playfield(4);
     playfield.solidify(new Shape(new Point(0, 2), [new Point(0, 0), new Point(1, 0), new Point(2, 0), new Point(3, 0)]));
