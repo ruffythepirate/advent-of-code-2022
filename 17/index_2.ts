@@ -4,11 +4,14 @@ import { getShape, moveShape, Playfield } from './17_2';
 function main(lines: string[]): void {
   const line = lines[0];
   let charIndex = 0;
-  const maxRocks = 2022;
+  const maxRocks = 1e6;
   //const maxRocks = 2;
   const playfield = new Playfield(7);
 
-  const firstRocks = []
+  const heightGainAfterWindIteration = [];
+  let previousHeightGain = 0;
+  let previousStones = 0;
+  const stoneGainAfterWindIteration = [];
 
   for (let i = 0; i < maxRocks; i++) {
     const shape = getShape(i, playfield.getTowerHeight());
@@ -25,14 +28,27 @@ function main(lines: string[]): void {
         //console.log('char index reset, shape index = ', i % 5, 'first rocks: ', firstRocks);
       }
       charIndex = (charIndex + 1);
+      if(charIndex % line.length === 0) {
+        heightGainAfterWindIteration.push(playfield.getTowerHeight() - previousHeightGain);
+        stoneGainAfterWindIteration.push(i - previousStones);
+        previousHeightGain = playfield.getTowerHeight();
+        previousStones = i;
+      }
       windDirection = getWindDirection(line, charIndex);
       solidifiedPosition = moveShape(shape, playfield, windDirection);
     }
     charIndex = (charIndex + 1);
+    if(charIndex % line.length === 0) {
+        heightGainAfterWindIteration.push(playfield.getTowerHeight() - previousHeightGain);
+        stoneGainAfterWindIteration.push(i - previousStones);
+        previousHeightGain = playfield.getTowerHeight();
+        previousStones = i;
+    }
   }
 
-  console.log(charIndex);
-  console.log(playfield.minY, playfield.getTowerHeight());
+  console.log(heightGainAfterWindIteration);
+  console.log(stoneGainAfterWindIteration);
+
 
   console.log(playfield.getTowerHeight());
 }
