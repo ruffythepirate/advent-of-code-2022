@@ -61,6 +61,21 @@ export class Shape {
 
     }
 
+    maxY(): number {
+      return this.bottomLeft.y + this.height;
+    }
+
+    isAt(x: number, y: number): boolean {
+      let adjustedX = x - this.bottomLeft.x;
+      let adjustedY = y - this.bottomLeft.y;
+      for (let point of this.points) {
+        if (point.x === adjustedX && point.y === adjustedY) {
+          return true;
+        }
+      }
+      return false;
+    }
+
     overlaps(other: Shape, offset: Point = point(0, 0)): boolean {
       let finalOffset = this.bottomLeft.minus(other.bottomLeft).plus(offset);
       for (let point of this.points) {
