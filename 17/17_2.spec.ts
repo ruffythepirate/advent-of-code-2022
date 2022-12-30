@@ -93,6 +93,29 @@ describe('Playfield', () => {
     expect(playfield.minY).toBe(3);
   });
 
+  it('should be able to check hasTopFlatRow', () => {
+    const playfield = new Playfield(4);
+    playfield.solidify(new Shape(new Point(0, 2), [new Point(0, 0), new Point(1, 0), new Point(2, 0), new Point(3, 0)]));
+    expect(playfield.hasTopFlatRow()).toBe(true);
+  });
+
+  it('should say false to hasTopFlatRow when no top flat row', () => {
+    const playfield = new Playfield(4);
+    playfield.solidify(new Shape(new Point(0, 2), [new Point(0, 0), new Point(1, 0), new Point(2, 0), new Point(3, 0)]));
+    playfield.solidify(new Shape(new Point(0, 3), [new Point(0, 0), new Point(1, 0), new Point(2, 0)]));
+    expect(playfield.hasTopFlatRow()).toBe(false);
+  });
+
+  it('should handle cleanup if minY > 0', () => {
+    const playfield = new Playfield(4);
+    playfield.solidify(new Shape(new Point(0, 2), [new Point(0, 0), new Point(1, 0), new Point(2, 0), new Point(3, 0)]));
+    playfield.cleanupHiddenRows();
+    expect(playfield.minY).toBe(2);
+    playfield.solidify(new Shape(new Point(0, 3), [new Point(0, 0), new Point(1, 0), new Point(2, 0), new Point(3, 0)]));
+    playfield.cleanupHiddenRows();
+    expect(playfield.minY).toBe(3);
+  });
+
   it('should return undefined when no minY above lowest row', () => {
     const playfield = new Playfield(4);
     expect(playfield.findMinY()).toBeUndefined();
@@ -143,7 +166,7 @@ describe('moveShape', () => {
     const shape = new Shape(new Point(0, 3), [new Point(0, 0)]);
     const playfield = new Playfield(7);
     const points = [];
-    const solidified = !moveShape(shape, playfield, 1);
+    const solidified = moveShape(shape, playfield, 1) !== undefined;
 
     expect(solidified).toBe(false);
     expect(shape.bottomLeft.x).toBe(1);
@@ -154,7 +177,7 @@ describe('moveShape', () => {
     const shape = new Shape(new Point(0, 0), [new Point(0, 0)]);
     const playfield = new Playfield(7);
     const points = [];
-    const solidified = !moveShape(shape, playfield, 0);
+    const solidified = moveShape(shape, playfield, 0) !== undefined;
 
     expect(solidified).toBe(true);
     expect(shape.bottomLeft.x).toBe(0);
@@ -165,13 +188,13 @@ describe('moveShape', () => {
     let shape = new Shape(new Point(0, 0), [new Point(0, 0)]);
     const playfield = new Playfield(7);
     const points = [];
-    const solidified = !moveShape(shape, playfield, 0);
+    const solidified = moveShape(shape, playfield, 0) !== undefined;
     expect(solidified).toBe(true);
 
     shape = new Shape(new Point(0, 3), [new Point(0, 0)]);
-    expect(moveShape(shape, playfield, 0)).toBe(true);
-    expect(moveShape(shape, playfield, 0)).toBe(true);
-    expect(moveShape(shape, playfield, 0)).toBe(false);
+    expect(moveShape(shape, playfield, 0) === undefined).toBe(true);
+    expect(moveShape(shape, playfield, 0) === undefined).toBe(true);
+    expect(moveShape(shape, playfield, 0) === undefined).toBe(false);
     expect(playfield.getTowerHeight()).toBe(2);
 
   });

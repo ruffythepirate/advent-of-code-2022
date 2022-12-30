@@ -119,14 +119,29 @@ export class Playfield {
   }
 
   /**
+   * Checks if the first row with any solid block seen from the top contains all solid blocks.
+   */
+  hasTopFlatRow(): boolean {
+    if (this.groundShape.length === 0) {
+      return false;
+    }
+    for (let y = this.groundShape.length - 1; y >= 0; y--) {
+      if(rowHasAnySolidBlock(this.groundShape[y])) {
+        return rowHasAllSolidBlocks(this.groundShape[y]);
+      }
+    }
+    return false;
+  }
+
+  /**
    * Checks if there is a bridge of solid rock available above present minY and returns minY in this bridge.
    */
   findMinY(): number | undefined {
-    let highestYInFirstColumn = this.getFirstColumnMaxY();
-    if (highestYInFirstColumn !== undefined) {
-      let newMinY = this.recursiveMinY(highestYInFirstColumn, 0, highestYInFirstColumn, 0);
-      if (newMinY !== null) {
-        return newMinY;
+    let adjustedHighestYInFirstColumn = this.getFirstColumnMaxY();
+    if (adjustedHighestYInFirstColumn !== undefined) {
+      let adjustedMinY = this.recursiveMinY(adjustedHighestYInFirstColumn, 0, adjustedHighestYInFirstColumn, 0);
+      if (adjustedMinY !== null) {
+        return adjustedMinY + this.minY;
       }
     }
     return undefined;
@@ -151,13 +166,19 @@ export class Playfield {
     }
     let bestMinY = this.recursiveMinY(adjustedY, x + 1, newMinY, 0);
     if(prevDiffY !== -1) {
-      bestMinY = Math.max(bestMinY, this.recursiveMinY(adjustedY+1, x, newMinY, 1));
+      bestMinY = Math.max(handleNullable(bestMinY, -1), 
+                         handleNullable(this.recursiveMinY(adjustedY+1, x, newMinY, 1), -1));
     }
     if(prevDiffY !== 1) {
-      bestMinY = Math.max(bestMinY, this.recursiveMinY(adjustedY-1, x, newMinY, -1));
+      bestMinY = Math.max(handleNullable(bestMinY, -1), 
+                          handleNullable(this.recursiveMinY(adjustedY-1, x, newMinY, -1), -1));
     }
 
-    return Math.min(bestMinY, newMinY);
+    if (bestMinY === null) {
+      return null;
+    }
+
+    return Math.min(bestMinY ? bestMinY : Infinity, newMinY);
   }
 
   cleanupHiddenRows() {
@@ -206,6 +227,31 @@ export class Playfield {
     return true;
 
   }
+}
+
+function handleNullable(value: number | null, defaultValue: number): number {
+  if (value === undefined) {
+    return defaultValue;
+  }
+  return value as number;
+}
+
+function rowHasAnySolidBlock(row: boolean[]) {
+  for (let solid of row) {
+    if (solid) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function rowHasAllSolidBlocks(row: boolean[]) {
+  for (let solid of row) {
+    if (!solid) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // there are 5 shapes.
@@ -271,7 +317,7 @@ export function getShape(shapeNumber: number, towerHeight: number): Shape {
 /**
  * Returns if the shape was solidified.
  */
-export function moveShape(shape: Shape, playfield: Playfield, windDirection: number): boolean {
+export function moveShape(shape: Shape, playfield: Playfield, windDirection: number): Point | undefined {
   if(windDirection > 0) {
     if (playfield.canMoveRight(shape)) {
       shape.bottomLeft = shape.bottomLeft.plus(point(1, 0));
@@ -284,10 +330,10 @@ export function moveShape(shape: Shape, playfield: Playfield, windDirection: num
 
   if (playfield.canMoveDown(shape)) {
     shape.bottomLeft = shape.bottomLeft.plus(point(0, -1));
-    return true;
+    return undefined;
   } else {
     playfield.solidify(shape);
-    return false;
+    return shape.bottomLeft;
   }
 }
 
