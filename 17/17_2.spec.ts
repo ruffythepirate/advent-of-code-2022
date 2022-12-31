@@ -1,4 +1,4 @@
-import { Point, Shape, getShape, Playfield, moveShape } from './17_2';
+import { Point, Shape, getShape, Playfield, moveShape, iteratePlayfield } from './17_2';
 
 describe("Point", () => {
   it("should have x and y coordinates", () => {
@@ -62,7 +62,26 @@ describe("getShape", () => {
   });
 });
 
+describe("iteratePlayfield", () => {
+  it("should call callback when new rock happens after exhausisting wind directions", () => {
+    const playfield = new Playfield(7);
+    const callback = jest.fn();
+
+    iteratePlayfield(playfield, "<<<", 3, callback);
+
+    expect(callback).toBeCalledTimes(2);
+  });
+});
+
 describe('Playfield', () => {
+
+  it('should get top y for each column', () => {
+    const playfield = new Playfield(7);
+    playfield.solidify(new Shape(new Point(0, 0), [new Point(0, 0), new Point(1, 0)]));
+    const topY = playfield.getTopYForEachColumn();
+    expect(topY).toEqual([1, 1, 0, 0, 0, 0, 0]);
+  });
+
   it('should have a width', () => {
     const playfield = new Playfield(7);
     expect(playfield.width).toBe(7);

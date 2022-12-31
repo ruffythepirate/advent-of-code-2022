@@ -133,6 +133,19 @@ export class Playfield {
     return false;
   }
 
+  getTopYForEachColumn(): number[] {
+    let topYForEachColumn = new Array(this.width).fill(0);
+    for (let x = 0; x < this.width; x++) {
+      for (let y = this.groundShape.length - 1; y >= 0; y--) {
+        if (this.groundShape[y][x]) {
+          topYForEachColumn[x] = 1 + y + this.minY;
+          break;
+        }
+      }
+    }
+    return topYForEachColumn;
+  }
+
   /**
    * Checks if there is a bridge of solid rock available above present minY and returns minY in this bridge.
    */
@@ -153,6 +166,12 @@ export class Playfield {
         return y;
       }
     }
+  }
+
+  getNormedEachColumnMaxY(): number[] { 
+    const firstColumnMaxY = this.getTopYForEachColumn();
+    const minMaxY = firstColumnMaxY.reduce((a, b) => Math.min(a, b));
+    return firstColumnMaxY.map(y => y - minMaxY);
   }
 
 
@@ -346,4 +365,46 @@ export function moveShape(shape: Shape, playfield: Playfield, windDirection: num
     return shape.bottomLeft;
   }
 }
+
+export class IterationState {
+  constructor(public rockNumber: number, public shapeNumber: number, public charOffset: number, public yDiffs: number[]) {
+  }
+
+  equals(other: IterationState) {
+    return this.shapeNumber === other.shapeNumber &&
+      this.charOffset === other.charOffset &&
+      this.yDiffs.length === other.yDiffs.length &&
+      this.yDiffs.every((yDiff, index) => yDiff === other.yDiffs[index]);
+  }
+}
+
+export function iteratePlayfield(playfield: Playfield, line: string, maxRocks: number, stoneStartAfterWindReset: (iterationState: IterationState) => number) {
+  let charIndex = 0;
+  for (let i = 0; i < maxRocks; i++) {
+    if(charIndex > line.length) {
+      stoneStartAfterWindReset(new IterationState(i, i % shapes.length, charIndex, playfield.getNormedEachColumnMaxY()));
+    }
+    charIndex = charIndex % line.length;
+    const shape = getShape(i, playfield.getTowerHeight());
+
+    if(i % 1000 === 0) {
+      playfield.cleanupHiddenRows();
+    }
+
+    let windDirection = getWindDirection(line, charIndex);
+    let solidifiedPosition = moveShape(shape, playfield, windDirection);
+    while (solidifiedPosition === undefined) {
+      charIndex++;
+      windDirection = getWindDirection(line, charIndex);
+      solidifiedPosition = moveShape(shape, playfield, windDirection);
+    }
+    charIndex++;
+  }
+}
+
+function getWindDirection(line: string, charIndex: number): number {
+  return line[charIndex % line.length] === '<' ? -1 : 1;
+}
+
+
 
