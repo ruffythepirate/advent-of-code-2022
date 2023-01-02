@@ -1,4 +1,4 @@
-import { Point, Shape, getShape, Playfield, moveShape, iteratePlayfield } from './17_2';
+import { Point, Shape, getShape, Playfield, moveShape, iteratePlayfield, solveProblem, IterationState, findMatchingIterationState } from './17_2';
 
 describe("Point", () => {
   it("should have x and y coordinates", () => {
@@ -41,8 +41,6 @@ describe("Shape", () => {
     const shape = new Shape(new Point(1,2), [new Point(1, 2), new Point(3, 4)]);
     expect(shape.height).toBe(3);
   });
-
-
 });
 
 describe("getShape", () => {
@@ -66,6 +64,8 @@ describe("iteratePlayfield", () => {
   it("should call callback when new rock happens after exhausisting wind directions", () => {
     const playfield = new Playfield(7);
     const callback = jest.fn();
+
+    callback.mockReturnValue(0);
 
     iteratePlayfield(playfield, "<<<", 3, callback);
 
@@ -230,3 +230,48 @@ describe('moveShape', () => {
 
   });
 });
+
+describe('solveProblem', () => {
+  it('should handle example input problem', () => {
+    const solution = solveProblem('>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>', 2022);
+
+    expect(solution).toBe(3068);
+  });
+
+  it('should handle big input by using periodicity', () => {
+    const solution = solveProblem('>>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>', 1e12);
+
+    expect(solution).toBe(1514285714288);
+  });
+});
+
+describe('findMatchingIterationState', () => {
+  it('should find most recent matching iteration state', () => {
+    const iterationsStates = [
+      new IterationState(0, 2, 3, [1, 4, 3]),
+      new IterationState(10, 2, 3, [1, 2, 3]),
+      new IterationState(20, 2, 3, [1, 4, 3]),
+      new IterationState(30, 2, 3, [1, 2, 3]),
+    ];
+
+    const matchingIterationState = findMatchingIterationState(iterationsStates, 
+                                                              new IterationState(50, 2, 3, [1, 4, 3]));
+
+    expect(matchingIterationState).toEqual(new IterationState(20, 2, 3, [1, 4, 3]));
+  });
+
+  it('should return undefined if no matching iteration state', () => {
+    const iterationsStates = [
+      new IterationState(0, 2, 3, [1, 4, 3]),
+      new IterationState(10, 2, 3, [1, 2, 3]),
+      new IterationState(20, 2, 3, [1, 4, 3]),
+      new IterationState(30, 2, 3, [1, 2, 3]),
+    ];
+
+    const matchingIterationState = findMatchingIterationState(iterationsStates, 
+                                                              new IterationState(50, 2, 3, [1, 4, 4]));
+
+    expect(matchingIterationState).toBeUndefined();
+  });
+});
+

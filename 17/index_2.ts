@@ -4,8 +4,8 @@ import { getShape, moveShape, Playfield } from './17_2';
 function main_find_period(lines: string[]): void {
   const line = lines[0];
   let charIndex = 0;
-  const maxRocks = 1e6;
-  //const maxRocks = 2;
+  //const maxRocks = 1e6;
+  const maxRocks = 2022;
   const playfield = new Playfield(7);
 
   const heightGainAfterWindIteration = [];

@@ -204,8 +204,9 @@ export class Playfield {
   cleanupHiddenRows() {
     let newMinY = this.findMinY();
     if (newMinY !== undefined) {
+      const toRemove = newMinY - this.minY;
       this.minY = newMinY;
-      this.groundShape = this.groundShape.slice(this.minY);
+      this.groundShape = this.groundShape.slice(toRemove);
     }
   }
 
@@ -367,7 +368,7 @@ export function moveShape(shape: Shape, playfield: Playfield, windDirection: num
 }
 
 export class IterationState {
-  constructor(public rockNumber: number, public shapeNumber: number, public charOffset: number, public yDiffs: number[]) {
+  constructor(public rockNumber: number, public shapeNumber: number, public charOffset: number, public yDiffs: number[], public towerHeight: number = 0) {
   }
 
   equals(other: IterationState) {
@@ -382,7 +383,8 @@ export function iteratePlayfield(playfield: Playfield, line: string, maxRocks: n
   let charIndex = 0;
   for (let i = 0; i < maxRocks; i++) {
     if(charIndex > line.length) {
-      stoneStartAfterWindReset(new IterationState(i, i % shapes.length, charIndex, playfield.getNormedEachColumnMaxY()));
+      const iterationIncrease = stoneStartAfterWindReset(new IterationState(i, i % shapes.length, charIndex, playfield.getNormedEachColumnMaxY(), playfield.getTowerHeight()));
+      i += iterationIncrease;
     }
     charIndex = charIndex % line.length;
     const shape = getShape(i, playfield.getTowerHeight());
@@ -400,6 +402,45 @@ export function iteratePlayfield(playfield: Playfield, line: string, maxRocks: n
     }
     charIndex++;
   }
+}
+
+/**
+ * Returns the height of the tower after the given amount of rocks. Uses patterns to optimize computation.
+ */
+export function solveProblem(line: string, maxRocks: number): number {
+  let playfield = new Playfield(7);
+
+  const iterationStates: IterationState[] = [];
+  let cyclicHeight = 0;
+  iteratePlayfield(playfield, line, maxRocks, (iterationState: IterationState) => {
+    const matchingIterationsState = findMatchingIterationState(iterationStates, iterationState)
+    if (matchingIterationsState !== undefined && cyclicHeight === 0) {
+      console.log("Found a cycle at iteration " + iterationState.rockNumber + " with length " + (iterationState.rockNumber - matchingIterationsState.rockNumber));
+      const heightDiff = iterationState.towerHeight - matchingIterationsState.towerHeight;
+      const rockDiff = iterationState.rockNumber - matchingIterationsState.rockNumber;
+
+      const remainingRocks = maxRocks - iterationState.rockNumber;
+      const cycleRepeats = Math.floor(remainingRocks / rockDiff);
+      cyclicHeight = heightDiff * cycleRepeats;
+      const remainingRocksAfterCyclic = remainingRocks % rockDiff;
+
+      return cycleRepeats * rockDiff;
+    } else {
+      iterationStates.push(iterationState);
+    }
+    return 0;
+  });
+
+  return playfield.getTowerHeight() + cyclicHeight;
+}
+
+export function findMatchingIterationState(iterationStates: IterationState[], iterationState: IterationState): IterationState | undefined{
+  for (let otherIterationState of iterationStates.reverse()) {
+    if (otherIterationState.equals(iterationState)) {
+      return otherIterationState;
+    }
+  }
+  return undefined;
 }
 
 function getWindDirection(line: string, charIndex: number): number {
