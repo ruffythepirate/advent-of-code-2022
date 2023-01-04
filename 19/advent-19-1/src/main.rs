@@ -3,17 +3,19 @@ extern crate regex;
 use regex::Regex;
 use std::io::BufRead;
 
+const MAX_TIME: u32 = 23;
 
 fn main() {
     let blueprints = read_input();
 
     let mut total_score = 0;
 
+
     for blueprint in blueprints {
-        let print_score = iterate_solution(&blueprint, 0, 23, &Vec::new(), &vec![Resource {
+        let print_score = iterate_solution(&blueprint, 0, MAX_TIME, &Vec::new(), &vec![Resource {
             resource_type: ResourceType::Ore,
-            amount: 1
-        }]);
+            amount: 1,
+        }], &mut vec![None; MAX_TIME as usize + 1]);
 
         print!("blueprint id {} score: {}", blueprint.id, print_score);
         total_score += print_score * blueprint.id;
@@ -140,23 +142,129 @@ fn grow_resources(resources: &Vec<Resource>, factories: &Vec<Resource>) -> Vec<R
     new_resources
 }
 
-fn iterate_solution(blueprint: &Blueprint, index: u32, max_index: u32, resources: &Vec<Resource>, factories: &Vec<Resource>) -> u32 {
+fn contains_geode_deal(deals: &Vec<&Deal>) -> bool {
+    for deal in deals {
+        if deal.factory == ResourceType::Geode {
+            return true;
+        }
+    }
+    false
+}
+
+fn get_resources_for_deal(deal_or_none: &Option<&Deal>, resources: &Vec<Resource>) -> Vec<Resource> {
+    match deal_or_none {
+        Some(deal) => {
+            perform_deal(deal, resources)
+        },
+        None => {
+            return resources.clone();
+        }
+    }
+}
+
+fn get_factories_for_deal(deal_or_none: &Option<&Deal>, factories: &Vec<Resource>) -> Vec<Resource> {
+    match deal_or_none {
+        Some(deal) => {
+            add_factory(factories, deal.factory)
+        },
+        None => factories.clone(),
+    }
+}
+
+fn min_of(a: u32, b: u32) -> u32 {
+    if a < b {
+        a
+    } else {
+        b
+    }
+}
+
+// get possible deals. if there are none, return None
+
+// how to prune? We could check factory states and see if we have a better score. In that case
+// there is no need to continue. Best Score is possible to keep track of. But when do you cut off
+// other branches? It's 9 points would only make it possible to cut off at 1/3/6/10 minute 20,
+// which still gives roughly 5**20 possibilities. What other rules are applicable? We if last was a
+// no deal and we could afford a factory, that branch is also not interesting. This roughly would
+// only cut off to 4**20, which is still in the range of 10**12 iterations.
+// We could keep a map of best value for factory states. This helps prune the diamond shapes of
+// choices. This would speak for a width first search. Here we probably need to go into minute
+// 17/18 before we get points and can start to prune. Which is still too much.
+// On each level one can have the best score / chosen deal / factory state. if score is better and
+// factory state is the same or better, we can prune. That would prune a lot. But it might  prevent
+// some states where we would have waited... Well, let's try
+//
+// how do we decrease the size of the algorithm. 
+// 1) Create get_possible_deals function.
+// 2) Introduce an array of minute / best state. State is: Score / Factory State.
+// 3) Create is_factory_state_better_or_same function. It compares all functions and returns true if they
+//    are all better or equal.
+
+#[derive(Clone)]
+struct SearchState {
+    score: u32,
+    factories: Vec<Resource>,
+}
+
+fn is_factory_state_better_or_same(a: &Vec<Resource>, b: &Vec<Resource>) -> bool {
+    for factory in a {
+        let mut found = false;
+        for other_factory in b {
+            if factory.resource_type == other_factory.resource_type {
+                found = true;
+                if factory.amount < other_factory.amount {
+                    return false;
+                }
+            }
+        }
+        if !found {
+            return false;
+        }
+    }
+    true
+}
+
+fn get_possible_deals<'a>(blueprint: &'a Blueprint, resources: &Vec<Resource>) -> Vec<Option<&'a Deal>> {
+    let mut possible_deals: Vec<Option<&'a Deal>> = Vec::new();
+    possible_deals.push(None);
+    for deal in &blueprint.deals {
+        if is_deal_possible(deal, resources) {
+            possible_deals.push(Some(deal));
+        }
+    }
+    // We make sure that the Geode deal is always first, followed by obsidian
+    possible_deals.reverse();
+    possible_deals
+}
+
+fn iterate_solution(blueprint: &Blueprint, index: u32, max_index: u32, resources: &Vec<Resource>, factories: &Vec<Resource>, best_states: &mut Vec<Option<SearchState>>) -> u32 {
+    let current_score = get_geode_amount(resources);
+
+    let best_state = &best_states[index as usize];
+    let previous_best_score = match best_state {
+        Some(state) => state.score,
+        None => 0,
+    };
 
     if index >= max_index {
-        return get_geode_amount(resources);
+        return current_score;
+    } else if previous_best_score > current_score && is_factory_state_better_or_same(&best_state.as_ref().unwrap().factories, factories) {
+        return current_score;
     }
-    let possible_deals = blueprint.deals.iter().filter(|deal| is_deal_possible(deal, resources)).collect::<Vec<&Deal>>();
+    let possible_deals = get_possible_deals(blueprint, resources);
 
-    println!("index: {}. possible_deals: {}", index, possible_deals.len());
-    let mut best_score = iterate_solution(blueprint, index + 1, max_index, &grow_resources(resources, factories), &factories);
+    let mut best_score = 0;
+    let grown_resources = grow_resources(resources, factories);
     for deal in possible_deals {
-        let mut resources = perform_deal(&deal, &resources);
-        resources = grow_resources(&resources, &factories);
-        let new_factories = add_factory(&resources, deal.factory);
-        let deal_score = iterate_solution(blueprint, index + 1, max_index, &resources, &new_factories);
+        let resources = get_resources_for_deal(&deal, &grown_resources);
+        let new_factories = get_factories_for_deal(&deal, &factories);
+        let deal_score = iterate_solution(blueprint, index + 1, max_index, &resources, &new_factories, best_states);
         if deal_score > best_score {
             best_score = deal_score;
         }
+    }
+    if best_score > previous_best_score {
+        best_states[index as usize] = Some(SearchState { score: best_score, factories: factories.clone() });
     }
     best_score
 }
@@ -228,6 +336,38 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_is_factory_state_better_or_same() {
+
+        let mut result = is_factory_state_better_or_same(&vec![Resource {
+            resource_type: ResourceType::Ore,
+            amount: 1,
+        }], &vec![Resource {
+            resource_type: ResourceType::Ore,
+            amount: 1,
+        }]);
+        assert!(result);
+
+        result = is_factory_state_better_or_same(&vec![Resource {
+            resource_type: ResourceType::Ore,
+            amount: 1,
+        }], &vec![Resource {
+            resource_type: ResourceType::Ore,
+            amount: 2,
+        }]);
+
+        assert!(!result);
+
+        result = is_factory_state_better_or_same(&vec![Resource {
+            resource_type: ResourceType::Ore,
+            amount: 1,
+        }], &vec![Resource {
+            resource_type: ResourceType::Clay,
+            amount: 1,
+        }]);
+
+        assert!(!result);
+    }
+    #[test]
     fn test_grow_resources() {
         let resources = vec![
             Resource {
@@ -277,7 +417,7 @@ mod tests {
             amount: 10,
         }];
         let factories = vec![];
-        let result = iterate_solution(&blueprint, 0, 0, &resources, &factories);
+        let result = iterate_solution(&blueprint, 0, 0, &resources, &factories, &mut vec![None]);
         assert_eq!(result, 10);
     }
 
@@ -296,6 +436,32 @@ mod tests {
             resource_type: ResourceType::Ore,
             amount: 1,
         }]);
+    }
+
+    #[test]
+    fn should_get_possible_deals() {
+        let blueprint = parse_blueprint("Blueprint 1: Each ore robot costs 4 ore. Each clay robot costs 4 ore. Each obsidian robot costs 4 ore and 5 clay. Each geode robot costs 3 ore and 15 obsidian.");
+        let resources = vec![
+            Resource {
+                resource_type: ResourceType::Ore,
+                amount: 10,
+            },
+            Resource {
+                resource_type: ResourceType::Clay,
+                amount: 10,
+            },
+            Resource {
+                resource_type: ResourceType::Obsidian,
+                amount: 15,
+            },
+        ];
+
+        let deals = get_possible_deals(&blueprint, &resources);
+        assert_eq!(deals.get(0).unwrap().unwrap().factory, ResourceType::Geode);
+        assert_eq!(deals.get(1).unwrap().unwrap().factory, ResourceType::Obsidian);
+        assert_eq!(deals.get(2).unwrap().unwrap().factory, ResourceType::Clay);
+        assert_eq!(deals.get(3).unwrap().unwrap().factory, ResourceType::Ore);
+        assert_eq!(deals.get(4).unwrap().is_none(), true);
     }
 
     #[test]
