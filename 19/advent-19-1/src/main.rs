@@ -3,7 +3,7 @@ extern crate regex;
 use regex::Regex;
 use std::io::BufRead;
 
-const MAX_TIME: u32 = 23;
+const MAX_TIME: u32 = 16;
 
 fn main() {
     let blueprints = read_input();
@@ -17,7 +17,7 @@ fn main() {
             amount: 1,
         }], &mut vec![None; MAX_TIME as usize + 1]);
 
-        print!("blueprint id {} score: {}", blueprint.id, print_score);
+        println!("blueprint id {} score: {}", blueprint.id, print_score);
         total_score += print_score * blueprint.id;
     }
 
@@ -206,22 +206,50 @@ struct SearchState {
     factories: Vec<Resource>,
 }
 
+/**
+ * Checks on the resources from the end of the array until the front. If the resource is higher in
+ * vector a it's seen as better. If it's lower it's seen as worse.
+ */
 fn is_factory_state_better_or_same(a: &Vec<Resource>, b: &Vec<Resource>) -> bool {
-    for factory in a {
-        let mut found = false;
-        for other_factory in b {
-            if factory.resource_type == other_factory.resource_type {
-                found = true;
-                if factory.amount < other_factory.amount {
-                    return false;
-                }
-            }
-        }
-        if !found {
-            return false;
-        }
+    let mut diff = get_resource_diff(ResourceType::Geode, a, b);
+    if diff > 0 {
+        return true;
+    } else if (diff < 0) {
+        return false;
+    }
+    diff = get_resource_diff(ResourceType::Obsidian, a, b);
+    if diff > 0 {
+        return true;
+    } else if (diff < 0) {
+        return false;
+    }
+    diff = get_resource_diff(ResourceType::Clay, a, b);
+    if diff > 0 {
+        return true;
+    } else if (diff < 0) {
+        return false;
+    }
+    diff = get_resource_diff(ResourceType::Ore, a, b);
+    if diff > 0 {
+        return true;
+    } else if (diff < 0) {
+        return false;
     }
     true
+
+}
+
+fn get_resource_diff(resource_type: ResourceType, a: &Vec<Resource>, b: &Vec<Resource>) -> i32 {
+    get_resource_value(resource_type, a) as i32 - get_resource_value(resource_type, b) as i32
+}
+
+fn get_resource_value(resource_type: ResourceType, resources: &Vec<Resource>) -> u32 {
+    for resource in resources {
+        if resource.resource_type == resource_type {
+            return resource.amount;
+        }
+    }
+    0
 }
 
 fn get_possible_deals<'a>(blueprint: &'a Blueprint, resources: &Vec<Resource>) -> Vec<Option<&'a Deal>> {
@@ -232,10 +260,15 @@ fn get_possible_deals<'a>(blueprint: &'a Blueprint, resources: &Vec<Resource>) -
             possible_deals.push(Some(deal));
         }
     }
+
     // We make sure that the Geode deal is always first, followed by obsidian
     possible_deals.reverse();
     possible_deals
 }
+
+// now we search the tree with best options first, but it still takes a lot of time. Perhaps
+// allocation off arrays is too expensive. Let's make a measurement.
+
 
 fn iterate_solution(blueprint: &Blueprint, index: u32, max_index: u32, resources: &Vec<Resource>, factories: &Vec<Resource>, best_states: &mut Vec<Option<SearchState>>) -> u32 {
     let current_score = get_geode_amount(resources);
@@ -245,6 +278,7 @@ fn iterate_solution(blueprint: &Blueprint, index: u32, max_index: u32, resources
         Some(state) => state.score,
         None => 0,
     };
+
 
     if index >= max_index {
         return current_score;
@@ -263,8 +297,10 @@ fn iterate_solution(blueprint: &Blueprint, index: u32, max_index: u32, resources
             best_score = deal_score;
         }
     }
-    if best_score > previous_best_score {
-        best_states[index as usize] = Some(SearchState { score: best_score, factories: factories.clone() });
+
+    if current_score > previous_best_score {
+        println!("{}: {}", index, current_score);
+        best_states[index as usize] = Some(SearchState { score: current_score, factories: factories.clone() });
     }
     best_score
 }
@@ -348,14 +384,14 @@ mod tests {
         assert!(result);
 
         result = is_factory_state_better_or_same(&vec![Resource {
-            resource_type: ResourceType::Ore,
+            resource_type: ResourceType::Clay,
             amount: 1,
         }], &vec![Resource {
             resource_type: ResourceType::Ore,
             amount: 2,
         }]);
 
-        assert!(!result);
+        assert!(result);
 
         result = is_factory_state_better_or_same(&vec![Resource {
             resource_type: ResourceType::Ore,
