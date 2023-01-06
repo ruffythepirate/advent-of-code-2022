@@ -3,22 +3,25 @@ extern crate regex;
 use regex::Regex;
 use std::io::BufRead;
 
-const MAX_TIME: u32 = 16;
+const MAX_TIME: u32 = 24;
 
 include!("input.rs");
+include!("new_solution.rs");
 
 fn main() {
     let blueprints = read_input();
 
     let mut total_score = 0;
 
-
+    println!("{} blueprints", blueprints.len());
     for blueprint in blueprints {
+        let print_score = start_iterate(&blueprint, MAX_TIME);
+        /*
         let print_score = iterate_solution(&blueprint, 0, MAX_TIME, &Vec::new(), &vec![Resource {
             resource_type: ResourceType::Ore,
             amount: 1,
         }], &mut vec![None; MAX_TIME as usize + 1]);
-
+        */
         println!("blueprint id {} score: {}", blueprint.id, print_score);
         total_score += print_score * blueprint.id;
     }
