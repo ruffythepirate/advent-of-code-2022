@@ -67,8 +67,9 @@ fn perform_move(move_list: &mut Vec<i32>, index_list: &mut Vec<usize>, movement:
 fn get_move(moves: &Vec<i32>, index_list: &Vec<usize>, index: usize) -> (usize, usize) {
     index_list.iter().position(|&v| v == index).map(|i| {
         let value = moves[i];
-        let value_sign = if value < 0 { -1 } else { 1 };
-        let new_index = wrap_index(i as i32 + moves[i], moves.len());
+        let value_adjusted = value % (index_list.len() - 1) as i32;
+        let value_sign = if value_adjusted < 0 { -1 } else { 1 };
+        let new_index = wrap_index(i as i32 + value_adjusted, moves.len());
         if value_sign < 0 {
             if new_index == 0 {
                 (i, moves.len() - 1)
@@ -115,11 +116,26 @@ mod tests {
 
     #[test]
     fn test_perform_long_move() {
-        let mut move_list = vec![10, 2, -3, 3, -2, 0, 4];
+        let mut move_list = vec![10, 2, -10, 3, -2, 0, 4];
         let mut index_list = vec![0, 1, 2, 3, 4, 5, 6];
         move_index(&mut move_list, &mut index_list, 0);
-        assert_eq!(move_list, vec![2, 1, -3, 3, -2, 10, 0, 4]);
-        assert_eq!(index_list, vec![0, 2, 3, 4, 0, 5, 6]);
+        assert_eq!(move_list, vec![2, -10, 3, -2, 10, 0, 4]);
+        assert_eq!(index_list, vec![1, 2, 3, 4, 0, 5, 6]);
+        move_index(&mut move_list, &mut index_list, 2);
+        assert_eq!(move_list, vec![2, 3, -2,-10, 10, 0, 4]);
+        assert_eq!(index_list, vec![1, 3, 4, 2, 0, 5, 6]);
+    }
+
+    #[test]
+    fn test_perform_wrap_move() {
+        let mut move_list = vec![0, -2, 2];
+        let mut index_list = vec![0, 1, 2];
+        move_index(&mut move_list, &mut index_list, 1);
+        assert_eq!(move_list, vec![0, -2, 2]);
+        assert_eq!(index_list, vec![0, 1, 2]);
+        move_index(&mut move_list, &mut index_list, 2);
+        assert_eq!(move_list, vec![0, -2, 2]);
+        assert_eq!(index_list, vec![0, 1, 2]);
     }
 }
 
